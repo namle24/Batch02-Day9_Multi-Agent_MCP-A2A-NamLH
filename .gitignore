@@ -4,3 +4,5 @@
 .claude
 **SOLUTION**
 data/performance/*.jsonl
+__pycache__/
+Lab_Assignment/performance/*.jsonl

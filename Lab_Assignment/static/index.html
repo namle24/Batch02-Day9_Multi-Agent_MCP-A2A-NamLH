@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day08 Supervisor - Workers</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f4f6f8; color: #142033; }
+    main { width: min(1100px, calc(100vw - 28px)); margin: 0 auto; padding: 24px 0 36px; }
+    h1 { margin: 0 0 8px; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; letter-spacing: 0; }
+    p { color: #64748b; line-height: 1.55; }
+    .grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 16px; align-items: start; }
+    .panel { background: #fff; border: 1px solid #d8e0eb; border-radius: 8px; box-shadow: 0 12px 28px rgba(20, 32, 51, 0.08); padding: 16px; }
+    textarea { width: 100%; min-height: 130px; resize: vertical; border: 1px solid #d8e0eb; border-radius: 8px; padding: 12px; font: inherit; line-height: 1.45; }
+    button { min-height: 40px; margin-top: 10px; border: 1px solid #2563eb; border-radius: 8px; background: #2563eb; color: #fff; padding: 0 14px; font: inherit; font-weight: 750; cursor: pointer; }
+    .meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .metric { border: 1px solid #d8e0eb; border-radius: 8px; padding: 10px; background: #fbfcfe; }
+    .metric span { display: block; color: #64748b; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+    .metric strong { display: block; margin-top: 6px; overflow-wrap: anywhere; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #111827; color: #e7edf7; border-radius: 8px; padding: 12px; line-height: 1.5; }
+    .evidence { display: grid; gap: 8px; margin-top: 10px; }
+    .card { border: 1px solid #d8e0eb; border-radius: 8px; padding: 10px; background: #fbfcfe; }
+    .card strong { display: block; margin-bottom: 4px; }
+    .small { font-size: 12px; color: #64748b; }
+    @media (max-width: 860px) { .grid, .meta { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Day08 Supervisor - Workers</h1>
+    <p>Assignment Day09: cải tiến chatbot/RAG Day08 bằng pattern Supervisor - Workers với 3 workers: Legal, News và Conversation.</p>
+    <section class="grid">
+      <div class="panel">
+        <h2>Đặt câu hỏi</h2>
+        <textarea id="question">Hành vi tàng trữ ma túy bị xử lý thế nào và có bài báo nào liên quan nghệ sĩ không?</textarea>
+        <button id="send">Gửi vào Supervisor</button>
+        <p class="small">Supervisor sẽ chọn worker phù hợp, gom evidence và trả lời như chatbot.</p>
+      </div>
+      <div class="panel">
+        <div class="meta">
+          <div class="metric"><span>Route</span><strong id="route">-</strong></div>
+          <div class="metric"><span>Latency</span><strong id="latency">-</strong></div>
+          <div class="metric"><span>Mode</span><strong id="mode">-</strong></div>
+        </div>
+        <h2>Câu trả lời</h2>
+        <pre id="answer">Chưa có câu hỏi.</pre>
+        <h2>Trace</h2>
+        <pre id="trace">-</pre>
+        <h2>Evidence</h2>
+        <div class="evidence" id="evidence"></div>
+      </div>
+    </section>
+  </main>
+  <script>
+    const question = document.querySelector("#question");
+    const send = document.querySelector("#send");
+    const answer = document.querySelector("#answer");
+    const trace = document.querySelector("#trace");
+    const route = document.querySelector("#route");
+    const latency = document.querySelector("#latency");
+    const mode = document.querySelector("#mode");
+    const evidence = document.querySelector("#evidence");
+
+    send.addEventListener("click", async () => {
+      send.disabled = true;
+      send.textContent = "Đang xử lý...";
+      answer.textContent = "Supervisor đang gọi workers...";
+      evidence.innerHTML = "";
+      try {
+        const res = await fetch("/api/ask", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({question: question.value, top_k: 4})
+        });
+        const data = await res.json();
+        route.textContent = data.route.join(", ");
+        latency.textContent = `${data.latency_ms} ms`;
+        mode.textContent = `${data.mode} / ${data.model}`;
+        answer.textContent = data.answer;
+        trace.textContent = data.trace.map((item) => `- ${item}`).join("\\n");
+        evidence.innerHTML = data.evidence.map((item) => {
+          const src = item.url || item.source_pdf || item.path;
+          return `<div class="card"><strong>[${item.worker}] ${item.title}</strong><div class="small">${item.source_type} | score=${item.score} | ${src}</div></div>`;
+        }).join("");
+      } catch (error) {
+        answer.textContent = String(error);
+      } finally {
+        send.disabled = false;
+        send.textContent = "Gửi vào Supervisor";
+      }
+    });
+  </script>
+</body>
+</html>
+
