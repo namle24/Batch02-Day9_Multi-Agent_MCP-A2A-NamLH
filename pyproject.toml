@@ -28,5 +28,6 @@ packages = [
     "law_agent",
     "tax_agent",
     "compliance_agent",
+    "rag_chatbot",
     "stages",
 ]

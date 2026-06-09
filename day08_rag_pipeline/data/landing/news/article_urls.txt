@@ -1,0 +1,5 @@
+# Thêm URL bài báo mới vào đây, mỗi dòng một URL.
+# Sau đó chạy:
+#   uv run python -m day08_rag_pipeline.src.task2_crawl_news
+#   uv run python -m day08_rag_pipeline.src.task3_convert_markdown
+#   uv run python -m day08_rag_pipeline.src.task4_chunking_indexing
