@@ -132,6 +132,39 @@ cp .env.example .env
 uv run python test_client.py
 ```
 
+### Stage 5 Agent Interaction Demo
+
+Open the self-contained HTML demo in a browser:
+
+```bash
+docs/agent_interaction.html
+```
+
+The page visualizes the A2A flow between Registry, Customer Agent, Law Agent,
+Tax Agent, and Compliance Agent. It includes both the full Stage 5 flow and the
+latency-optimized flow used for the labwork comparison.
+
+### Stage 5 Latency Benchmark
+
+Baseline measurement:
+
+```bash
+OPENROUTER_MAX_TOKENS=512 A2A_TIMEOUT_SECONDS=600 ./start_all.sh
+A2A_TIMEOUT_SECONDS=600 uv run python test_client.py
+```
+
+Optimized measurement:
+
+```bash
+LATENCY_OPTIMIZED=1 OPENROUTER_MAX_TOKENS=512 A2A_TIMEOUT_SECONDS=600 ./start_all.sh
+LATENCY_OPTIMIZED=1 OPENROUTER_MAX_TOKENS=512 A2A_TIMEOUT_SECONDS=600 uv run python benchmark_latency.py --runs 1 --label optimized_new_key
+```
+
+`test_client.py` prints `TOTAL_LATENCY_SECONDS=...` for one question. The
+benchmark script also appends structured results to
+`data/performance/stage5_latency.jsonl`. A concise write-up is available at
+`docs/stage5_latency_report.md`.
+
 ### Run Individual Stage Demos
 
 No servers needed — each demo runs as a standalone script:

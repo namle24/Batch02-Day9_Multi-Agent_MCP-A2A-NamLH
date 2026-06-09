@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day09 Stage 5 - A2A Agent Interaction Demo</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --panel: #ffffff;
+      --ink: #142033;
+      --muted: #64748b;
+      --line: #d8e0eb;
+      --soft: #eef3f9;
+      --blue: #2563eb;
+      --green: #0f8f61;
+      --amber: #b7791f;
+      --shadow: 0 12px 28px rgba(20, 32, 51, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1220px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 40px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 4vw, 40px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 830px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    button,
+    select {
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    button {
+      padding: 0 14px;
+      cursor: pointer;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    button.primary { border-color: var(--blue); background: var(--blue); color: #fff; }
+    button.fast { border-color: var(--green); background: var(--green); color: #fff; }
+
+    select {
+      min-width: min(100%, 280px);
+      padding: 0 34px 0 12px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.8fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .section { padding: 18px; }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 19px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .demo-board {
+      padding: 18px;
+    }
+
+    .board-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      width: max-content;
+      max-width: 100%;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: #40516a;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      font-weight: 750;
+      overflow-wrap: anywhere;
+    }
+
+    .flow {
+      display: grid;
+      gap: 14px;
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .flow-row.two {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      max-width: 620px;
+      margin-left: auto;
+    }
+
+    .flow-row.single {
+      grid-template-columns: minmax(0, 1fr);
+      max-width: 320px;
+      margin: 0 auto;
+    }
+
+    .connector {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      text-align: center;
+    }
+
+    .connector span {
+      min-height: 30px;
+      display: grid;
+      place-items: center;
+      padding: 5px 8px;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+
+    .agent {
+      min-width: 0;
+      min-height: 150px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+      transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    }
+
+    .agent.active {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.13);
+      transform: translateY(-2px);
+    }
+
+    .agent.done { border-color: rgba(15, 143, 97, 0.72); }
+    .agent.optimized { border-color: rgba(183, 121, 31, 0.86); box-shadow: 0 0 0 4px rgba(183, 121, 31, 0.13); }
+
+    .role {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .agent h3 {
+      margin: 6px 0 7px;
+      font-size: 18px;
+      line-height: 1.22;
+      letter-spacing: 0;
+    }
+
+    .agent p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .metric {
+      min-height: 82px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 15px;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
+    .side { display: grid; gap: 18px; }
+
+    .steps {
+      display: grid;
+      gap: 10px;
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: guide;
+    }
+
+    .steps li {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
+      gap: 10px;
+      color: #314057;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .steps li::before {
+      counter-increment: guide;
+      content: counter(guide);
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: #2f4a70;
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .question {
+      margin: 0;
+      padding: 13px;
+      border: 1px solid #e5eaf1;
+      border-radius: 8px;
+      background: #fbfcfe;
+      color: #2f3e55;
+      font-size: 13px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    .legend {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .legend div {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 999px; background: var(--line); }
+    .dot.blue { background: var(--blue); }
+    .dot.green { background: var(--green); }
+    .dot.amber { background: var(--amber); }
+
+    .trace-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .trace {
+      height: 340px;
+      overflow: auto;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border-top: 1px solid var(--line);
+    }
+
+    .trace li {
+      display: grid;
+      grid-template-columns: 40px minmax(0, 1fr);
+      gap: 10px;
+      padding: 11px 18px;
+      border-bottom: 1px solid #edf1f6;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .trace .num {
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 850;
+    }
+
+    .trace strong { display: block; margin-bottom: 3px; color: var(--ink); font-size: 13px; }
+
+    .latency-table {
+      width: 100%;
+      margin-top: 12px;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .latency-table th,
+    .latency-table td {
+      padding: 9px 8px;
+      border-bottom: 1px solid #edf1f6;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .latency-table th {
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .cmd {
+      display: block;
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #111827;
+      color: #e7edf7;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    @media (max-width: 1050px) {
+      header,
+      .layout { grid-template-columns: 1fr; }
+      .toolbar { justify-content: stretch; }
+      button, select { flex: 1 1 190px; }
+    }
+
+    @media (max-width: 760px) {
+      main { width: min(100vw - 20px, 1220px); padding-top: 18px; }
+      .board-head,
+      .trace-head { display: grid; grid-template-columns: 1fr; }
+      .flow-row,
+      .flow-row.two,
+      .flow-row.single,
+      .connector { grid-template-columns: 1fr; max-width: none; margin: 0; }
+      .connector span::before { content: "↓ "; }
+      .metrics { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Day09 Stage 5 - Demo tương tác A2A Agents</h1>
+        <p class="subtitle">
+          File HTML này dùng để demo rõ luồng multi-agent Stage 5: User -> Customer Agent -> Registry -> Law Agent -> Tax/Compliance Agents -> trả kết quả và đo latency.
+        </p>
+      </div>
+      <div class="toolbar">
+        <select id="scenario" aria-label="Chọn kịch bản demo">
+          <option value="full">Câu hỏi đầy đủ: contract + tax + compliance</option>
+          <option value="tax">Câu hỏi thiên về tax</option>
+          <option value="compliance">Câu hỏi thiên về compliance</option>
+        </select>
+        <button class="primary" id="playFull" type="button">Chạy Full Stage 5</button>
+        <button class="fast" id="playFast" type="button">Chạy Optimized</button>
+        <button id="reset" type="button">Reset</button>
+      </div>
+    </header>
+
+    <section class="layout">
+      <div class="panel demo-board">
+        <div class="board-head">
+          <div>
+            <h2>Sơ đồ tương tác agent</h2>
+            <p class="note">Layout này không dùng đường overlay, nên không bị chèn nhau khi phóng to/thu nhỏ. Các badge thể hiện port hoặc vai trò của từng node.</p>
+          </div>
+          <span class="badge">Stage 5 Distributed A2A</span>
+        </div>
+
+        <div class="flow">
+          <div class="flow-row single">
+            <article class="agent" data-agent="registry">
+              <div><span class="role">Discovery Service</span><h3>Registry</h3><p>Lưu agent card và trả endpoint theo capability: legal_question, tax_question, compliance_question.</p></div>
+              <span class="badge">port 10000</span>
+            </article>
+          </div>
+
+          <div class="connector"><span>agents register khi startup</span><span>Customer discover Law</span><span>Law discover specialists</span></div>
+
+          <div class="flow-row">
+            <article class="agent" data-agent="user">
+              <div><span class="role">Client</span><h3>User / test_client.py</h3><p>Gửi câu hỏi, chờ response A2A và in TOTAL_LATENCY_SECONDS.</p></div>
+              <span class="badge">latency timer</span>
+            </article>
+            <article class="agent" data-agent="customer">
+              <div><span class="role">Entry Agent</span><h3>Customer Agent</h3><p>Nhận câu hỏi, tạo trace_id/context_id, discover Law Agent và delegate request.</p></div>
+              <span class="badge">port 10100</span>
+            </article>
+            <article class="agent" data-agent="law">
+              <div><span class="role">Orchestrator</span><h3>Law Agent</h3><p>Chạy LangGraph: analyze_law -> routing -> call specialists -> aggregate.</p></div>
+              <span class="badge">port 10101</span>
+            </article>
+          </div>
+
+          <div class="connector"><span>User -> Customer</span><span>Customer -> Law qua A2A</span><span>Law gọi specialist song song</span></div>
+
+          <div class="flow-row two">
+            <article class="agent" data-agent="tax">
+              <div><span class="role">Specialist</span><h3>Tax Agent</h3><p>Phân tích thuế, IRS, tax evasion, penalties và rủi ro cá nhân.</p></div>
+              <span class="badge">port 10102</span>
+            </article>
+            <article class="agent" data-agent="compliance">
+              <div><span class="role">Specialist</span><h3>Compliance Agent</h3><p>Phân tích regulatory compliance, SEC, SOX, AML, FCPA, governance.</p></div>
+              <span class="badge">port 10103</span>
+            </article>
+          </div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric"><span>Mode</span><strong id="modeValue">Ready</strong></div>
+          <div class="metric"><span>Routing</span><strong id="routingValue">Waiting</strong></div>
+          <div class="metric"><span>Parallel branches</span><strong id="parallelValue">0</strong></div>
+          <div class="metric"><span>Measured latency</span><strong id="latencyValue">Baseline 427.49s</strong></div>
+        </div>
+      </div>
+
+      <aside class="side">
+        <section class="panel section">
+          <h2>Cách dùng khi demo</h2>
+          <ol class="steps">
+            <li>Mở file này trong browser: <strong>docs/agent_interaction.html</strong>.</li>
+            <li>Chọn kịch bản câu hỏi ở dropdown phía trên.</li>
+            <li>Bấm <strong>Chạy Full Stage 5</strong> để mô phỏng luồng baseline.</li>
+            <li>Bấm <strong>Chạy Optimized</strong> để mô phỏng luồng giảm latency.</li>
+            <li>Mở terminal chạy command ở dưới nếu muốn show kết quả thật.</li>
+          </ol>
+        </section>
+
+        <section class="panel section">
+          <h2>Câu hỏi demo</h2>
+          <p class="question" id="questionText"></p>
+          <div class="legend">
+            <div><span class="dot blue"></span>Đang xử lý request A2A hoặc node LangGraph</div>
+            <div><span class="dot green"></span>Bước đã hoàn tất</div>
+            <div><span class="dot amber"></span>Nhánh tối ưu latency trong Law Agent</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section trace-head">
+            <div><h2>Interaction Trace</h2><p class="note">Log mô phỏng từng bước để giải thích request đi qua agent nào.</p></div>
+            <span class="badge" id="traceBadge">ready</span>
+          </div>
+          <ol class="trace" id="log"></ol>
+        </section>
+
+        <section class="panel section">
+          <h2>Kết quả latency đã đo</h2>
+          <table class="latency-table">
+            <thead><tr><th>Mode</th><th>Latency</th><th>Ý nghĩa</th></tr></thead>
+            <tbody>
+              <tr><td>Full Stage 5</td><td><strong>427.49s</strong></td><td>Luồng đầy đủ, có LLM routing và final synthesis.</td></tr>
+              <tr><td>Optimized</td><td><strong>386.48s</strong></td><td>Bỏ LLM router ở Law Agent và bỏ final synthesis LLM call.</td></tr>
+              <tr><td>Giảm được</td><td><strong>41.01s</strong></td><td>Nhanh hơn khoảng 9.59% trong lần đo này.</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="panel section">
+          <h2>Lệnh chạy thật</h2>
+          <p class="note">Chạy baseline trước. Sau khi xong, Ctrl+C để tắt services rồi chạy optimized.</p>
+          <code class="cmd">OPENROUTER_MAX_TOKENS=512 A2A_TIMEOUT_SECONDS=600 ./start_all.sh
+A2A_TIMEOUT_SECONDS=600 uv run python test_client.py
+
+LATENCY_OPTIMIZED=1 OPENROUTER_MAX_TOKENS=512 A2A_TIMEOUT_SECONDS=600 ./start_all.sh
+LATENCY_OPTIMIZED=1 OPENROUTER_MAX_TOKENS=512 A2A_TIMEOUT_SECONDS=600 uv run python benchmark_latency.py --runs 1 --label optimized_new_key</code>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const scenarios = {
+      full: {
+        question: "If a company breaks a contract and avoids taxes, what are the legal and regulatory consequences?",
+        route: "Tax + Compliance",
+        parallel: 2
+      },
+      tax: {
+        question: "What penalties can a company face if it underreports income and avoids federal taxes?",
+        route: "Tax only",
+        parallel: 1
+      },
+      compliance: {
+        question: "What compliance risks arise if a public company hides material control failures from regulators?",
+        route: "Compliance only",
+        parallel: 1
+      }
+    };
+
+    const fullSteps = [
+      ["registry", "Agents register với Registry", "Registry nhận agent card của Customer, Law, Tax và Compliance."],
+      ["user", "User gửi câu hỏi", "test_client.py tạo A2A message và bắt đầu đo latency."],
+      ["customer", "Customer Agent nhận request", "Tạo trace_id/context_id để theo dõi request xuyên suốt hệ thống."],
+      ["registry", "Customer discover legal_question", "Registry trả endpoint của Law Agent trên port 10101."],
+      ["law", "Customer delegate sang Law Agent", "Request đi qua A2A HTTP từ Customer Agent sang Law Agent."],
+      ["law", "Law Agent analyze_law", "Law Agent gọi LLM để phân tích pháp lý tổng quát."],
+      ["law", "Law Agent check_routing", "Baseline dùng LLM để quyết định có cần Tax/Compliance Agent không."],
+      ["registry", "Law discover specialist agents", "Registry trả endpoint của Tax Agent và Compliance Agent."],
+      ["tax", "Tax Agent chạy song song", "Tax Agent phân tích tax evasion, IRS, penalties."],
+      ["compliance", "Compliance Agent chạy song song", "Compliance Agent phân tích regulatory compliance, SEC/SOX/AML/FCPA."],
+      ["law", "Law Agent aggregate", "Tổng hợp Law + Tax + Compliance thành final answer."],
+      ["customer", "Customer Agent trả kết quả", "Customer nhận final answer từ Law Agent rồi trả về test_client.py."],
+      ["user", "In latency", "test_client.py in TOTAL_LATENCY_SECONDS=427.49 trong lần đo mới."]
+    ];
+
+    const optimizedSteps = [
+      ["registry", "Agents register với Registry", "Kiến trúc và port vẫn giữ nguyên như Full Stage 5."],
+      ["user", "User gửi câu hỏi", "Vẫn đi qua Customer Agent và A2A protocol."],
+      ["customer", "Customer delegate sang Law Agent", "Không thay đổi giao tiếp distributed A2A."],
+      ["law", "Law Agent analyze_law", "Vẫn giữ phân tích pháp lý chính bằng LLM."],
+      ["law", "Optimized keyword routing", "LATENCY_OPTIMIZED=1 thay LLM router bằng keyword routing."],
+      ["tax", "Tax Agent chạy song song", "Tax Agent vẫn được gọi nếu câu hỏi có tax keywords."],
+      ["compliance", "Compliance Agent chạy song song", "Compliance Agent vẫn được gọi nếu câu hỏi có compliance keywords."],
+      ["law", "Fast aggregate", "Bỏ final synthesis LLM call ở Law Agent, nối trực tiếp các section."],
+      ["user", "So sánh latency", "Optimized đo được 386.48s, giảm 41.01s so với baseline."]
+    ];
+
+    const delay = 650;
+    const log = document.querySelector("#log");
+    const scenarioSelect = document.querySelector("#scenario");
+    const questionText = document.querySelector("#questionText");
+    const modeValue = document.querySelector("#modeValue");
+    const routingValue = document.querySelector("#routingValue");
+    const parallelValue = document.querySelector("#parallelValue");
+    const latencyValue = document.querySelector("#latencyValue");
+    const traceBadge = document.querySelector("#traceBadge");
+    let timers = [];
+
+    function setScenario() {
+      const item = scenarios[scenarioSelect.value];
+      questionText.textContent = item.question;
+      routingValue.textContent = item.route;
+      parallelValue.textContent = String(item.parallel);
+    }
+
+    function clearTimers() {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      timers = [];
+    }
+
+    function reset() {
+      clearTimers();
+      log.innerHTML = "";
+      document.querySelectorAll(".agent").forEach((node) => node.classList.remove("active", "done", "optimized"));
+      modeValue.textContent = "Ready";
+      latencyValue.textContent = "Baseline 427.49s";
+      traceBadge.textContent = "ready";
+      setScenario();
+    }
+
+    function addLog(index, title, detail) {
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="num">${String(index).padStart(2, "0")}</span><span><strong>${title}</strong>${detail}</span>`;
+      log.appendChild(li);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function mark(agent, optimized) {
+      document.querySelectorAll(".agent.active").forEach((node) => {
+        node.classList.remove("active", "optimized");
+        node.classList.add("done");
+      });
+      const node = document.querySelector(`[data-agent="${agent}"]`);
+      if (!node) return;
+      node.classList.remove("done");
+      node.classList.add("active");
+      if (optimized && agent === "law") node.classList.add("optimized");
+    }
+
+    function play(optimized = false) {
+      reset();
+      const selected = scenarios[scenarioSelect.value];
+      const steps = optimized ? optimizedSteps : fullSteps;
+      modeValue.textContent = optimized ? "Optimized Stage 5" : "Full Stage 5";
+      routingValue.textContent = optimized ? `${selected.route} keyword router` : `${selected.route} LLM router`;
+      latencyValue.textContent = optimized ? "386.48s" : "427.49s";
+      traceBadge.textContent = optimized ? "optimized trace" : "baseline trace";
+
+      steps.forEach(([agent, title, detail], index) => {
+        timers.push(window.setTimeout(() => {
+          mark(agent, optimized);
+          addLog(index + 1, title, detail);
+          if (index === steps.length - 1) {
+            timers.push(window.setTimeout(() => {
+              document.querySelectorAll(".agent.active").forEach((node) => {
+                node.classList.remove("active", "optimized");
+                node.classList.add("done");
+              });
+              traceBadge.textContent = "done";
+            }, delay));
+          }
+        }, index * delay));
+      });
+    }
+
+    scenarioSelect.addEventListener("change", reset);
+    document.querySelector("#playFull").addEventListener("click", () => play(false));
+    document.querySelector("#playFast").addEventListener("click", () => play(true));
+    document.querySelector("#reset").addEventListener("click", reset);
+    reset();
+  </script>
+</body>
+</html>

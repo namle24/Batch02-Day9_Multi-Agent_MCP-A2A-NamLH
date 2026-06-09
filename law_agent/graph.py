@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import Annotated, TypedDict
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -22,6 +23,32 @@ from common.llm import get_llm
 logger = logging.getLogger(__name__)
 
 MAX_DELEGATION_DEPTH = 3
+
+
+def _latency_optimized() -> bool:
+    """Enable a faster demo path without changing the default Stage 5 behavior."""
+    return os.getenv("LATENCY_OPTIMIZED", "0").lower() in {"1", "true", "yes", "on"}
+
+
+def _keyword_routing(question: str) -> dict:
+    """Cheap deterministic router used only for latency demo mode."""
+    question_lower = question.lower()
+    tax_keywords = ["tax", "irs", "revenue", "evasion", "avoid", "avoidance", "thuế"]
+    compliance_keywords = [
+        "compliance",
+        "regulatory",
+        "regulation",
+        "sec",
+        "sox",
+        "aml",
+        "fcpa",
+        "gdpr",
+        "governance",
+    ]
+    return {
+        "needs_tax": any(keyword in question_lower for keyword in tax_keywords),
+        "needs_compliance": any(keyword in question_lower for keyword in compliance_keywords),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -78,6 +105,15 @@ async def check_routing(state: LawState) -> dict:
     if depth >= MAX_DELEGATION_DEPTH:
         logger.info("Max delegation depth reached (%d); skipping sub-agents", depth)
         return {"needs_tax": False, "needs_compliance": False}
+
+    if _latency_optimized():
+        parsed = _keyword_routing(state["question"])
+        logger.info(
+            "Optimized keyword routing: needs_tax=%s needs_compliance=%s",
+            parsed["needs_tax"],
+            parsed["needs_compliance"],
+        )
+        return parsed
 
     llm = get_llm()
     messages = [
@@ -187,6 +223,17 @@ async def aggregate(state: LawState) -> dict:
         sections.append(f"## Regulatory Compliance Analysis\n{state['compliance_result']}")
 
     combined = "\n\n---\n\n".join(sections)
+
+    if _latency_optimized():
+        final_answer = (
+            "# Optimized Multi-Agent Legal Analysis\n\n"
+            f"{combined}\n\n"
+            "---\n\n"
+            "Educational note: this optimized response skips one final LLM synthesis call "
+            "to reduce latency during the Stage 5 demo. Consult licensed attorneys for "
+            "case-specific advice."
+        )
+        return {"final_answer": final_answer}
 
     messages = [
         SystemMessage(
